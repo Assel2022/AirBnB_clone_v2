@@ -86,3 +86,4 @@ class Place(BaseModel, Base):
             """Setter method for amenities property for FileStorage"""
             from models.amenity import Amenity
             if type(value) == Amenity:
+                self.amenity_ids.append(value.id)
