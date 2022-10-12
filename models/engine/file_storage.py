@@ -32,8 +32,6 @@ class FileStorage:
             for key, val in temp.items():
                 temp[key] = val.to_dict()
             json.dump(temp, f)
-            break
-            
 
     def reload(self):
         """Loads storage dictionary from file"""
@@ -66,3 +64,4 @@ class FileStorage:
             for key in obj_dict:
                 if (obj_dict[key] == obj):
                     del obj_dict[key]
+                    break

@@ -32,6 +32,7 @@ class DBStorage:
                                       pool_pre_ping=True)
         if getenv("HBNB_ENV") == "test":
             Base.metadata.drop_all(self.__engine)
+            self.__session = Session()
 
     def all(self, cls=None):
         """Query on the curret database session"""

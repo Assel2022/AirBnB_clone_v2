@@ -8,3 +8,4 @@ GRANT ALL PRIVILEGES ON hbnb_test_db.* TO 'hbnb_test'@'localhost';
 -- Grant select privileges to user on performance_schema database
 GRANT SELECT ON performance_schema.* TO 'hbnb_test'@'localhost';
 -- Flush privileges
+FLUSH PRIVILEGES;
