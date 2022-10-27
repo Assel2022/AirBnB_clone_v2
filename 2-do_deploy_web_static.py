@@ -1,70 +1,69 @@
 #!/usr/bin/python3
 """
-Fabric script that distributes an archive to your web servers
+    Script generates a .tgz archive from web_static folder and
+    distributes archive to web servers
 """
+from fabric.operations import local, run, put, env
 
-from fabric.api import local, run, env, put
-from datetime import datetime
-import logging
-from os import path
 
-logger = logging.getLogger('ftpuploader')
-env.use_ssh_config = True
-env.hosts = ['34.73.17.45']
-env.user = "ubuntu"
-env.key_filename = "~/.ssh/holberton"
+env.hosts = ['34.224.71.206', '54.174.221.228']
+env.user = 'ubuntu'
 
 
 def do_pack():
     """
-    Generates a .tgz archive from the contents of the web_static
-    Archive:
-    web_static_<year><month><day><hour><minute><second>.tgz
-    Return:
-    Return the path if the archive has been correctly generated
-    otherwise, return None
+        Function creates a .tgz archive from all files in web_static folder
+        Each archive will be stored in versions folder
+        Archive name:
+            web_static_<year><month><day><hour><minute><second>.tgz
+        Returns:
+            archive path if successful
+            None if fail
     """
-    time = datetime.now().strftime("%Y%m%d%H%M%S")
+    from datetime import datetime
+
+    name = "./versions/web_static_{}.tgz"
+    name = name.format(datetime.now().strftime("%Y%m%d%H%M%S"))
     local("mkdir -p versions")
-    path_name = "versions/web_static_{}.tgz".format(time)
-    tar_status = local("tar -cvzf {} web_static".format(path_name))
-    return path_name if tar_status.succeeded else None
+    create = local("tar -cvzf {} web_static".format(name))
+    if create.succeeded:
+        return name
+    else:
+        return None
 
 
 def do_deploy(archive_path):
     """
-    Distributes an archive to your web servers
-    Return:
-        False if the file at the path archive_path doesnt exist
+        Function distributes an archive to web servers
+        Returns:
+            True if operations succeed
+            False if archive_path doesn't exist or fail
     """
-    if not path.exists(archive_path):
+    import os
+
+    if not os.path.exists(archive_path):
         return False
-
-    file_name = archive_path.split('/')[1]
-    file_noext = file_name.split('.')[0]
-    try:
-        put(archive_path, '/tmp/')
-        run('mkdir -p /data/web_static/releases/{}'.format(file_noext))
-        run('tar -xzf /tmp/{} '
-            '-C /data/web_static/releases/{}'.format(file_name, file_noext))
-        run('rm /tmp/{}'.format(file_name))
-        run('mv -f /data/web_static/releases/{}/web_static/* \
-        /data/web_static/releases/{}/'.format(file_noext, file_noext))
-        run('rm -rf '
-            '/data/web_static/releases/{}/web_static'.format(file_noext))
-        run('rm -rf /data/web_static/current')
-        run('ln -s /data/web_static/releases/{} \
-        /data/web_static/current'.format(file_noext))
-        print('New version deployed!')
-        return True
-
-    except Exception as e:
-        # Checks for errors
-        logger.error(str(e))
-        print('New version has not been deployed...')
+    if not put(archive_path, "/tmp/").succeeded:
         return False
+    filename = archive_path[9:]
+    foldername = "/data/web_static/releases/" + filename[:-4]
+    filename = "/tmp/" + filename
+    if not run('mkdir -p {}'.format(foldername)).succeeded:
+        return False
+    if not run('tar -xzf {} -C {}'.format(filename, foldername)).succeeded:
+        return False
+    if not run('rm {}'.format(filename)).succeeded:
+        return False
+    if not run('mv {}/web_static/* {}'.format(foldername,
+                                              foldername)).succeeded:
+        return False
+    if not run('rm -rf {}/web_static'.format(foldername)).succeeded:
+        return False
+    if not run('rm -rf /data/web_static/current').succeeded:
+        return False
+    return run('ln -s {} /data/web_static/current'.format(
+        foldername)).succeeded
 
 
-if __name__ == '__main__':
-    do_deploy()
-
+if __name__ == "__main__":
+    do_pack()
